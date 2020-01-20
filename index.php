@@ -77,6 +77,17 @@ function outputHtmlHeader() {
     <title>{$GLOBALS['PAGE_TITLE']}</title>
     <style>
 
+@font-face {
+  font-family: "Yu Gothic";
+  src: local("Yu Gothic Medium"), local("YuGothic-Medium");
+}
+
+@font-face {
+  font-family: "Yu Gothic";
+  src: local("Yu Gothic Bold"), local("YuGothic-Bold");
+  font-weight: bold;
+}
+
 *,
 ::before,
 ::after {
@@ -84,7 +95,7 @@ function outputHtmlHeader() {
 }
 
 html {
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, YuGothic, "Yu Gothic", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Hiragino Kaku Gothic Pro", Meiryo, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, YuGothic, "Yu Gothic", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   text-decoration-skip-ink: none;
   -webkit-text-size-adjust: 100%;
   -webkit-text-decoration-skip: objects;

@@ -65,8 +65,17 @@ $ curl -X POST http://example.com/index.php -d 'credential=MY_CREDENTIAL&text=Te
 次のようなブックマークレットで投稿できるようになる。
 
 ```javascript
+// prompt() に書いた文字列を投稿する
 javascript:(x=>{x=prompt('Post','');  window.open('http://example.com/index.php?credential=MY_CREDENTIAL&mode=post&text='+encodeURIComponent(x))})();
 javascript:(x=>{x=prompt('Post','');location.href='http://example.com/index.php?credential=MY_CREDENTIAL&mode=post&text='+encodeURIComponent(x) })();
+
+// prompt() に書いた文字列を投稿する・未入力の場合は単にページを表示する
+javascript:((x,u)=>{x=prompt('Post or Open');u=x?'&mode=post&text='+encodeURIComponent(x):'';  window.open('http://example.com/index.php?credential=MY_CREDENTIAL'+u)})();
+javascript:((x,u)=>{x=prompt('Post or Open');u=x?'&mode=post&text='+encodeURIComponent(x):'';location.href='http://example.com/index.php?credential=MY_CREDENTIAL'+u} )();
+
+// 閲覧中の Web ページのタイトルと URL を投稿する・任意でコメントもかける
+javascript:((d,x,u)=>{x=prompt('Post This Page');u=x?x+'\n':'';  window.open('http://example.com/index.php?credential=MY_CREDENTIAL&mode=post&text='+encodeURIComponent(u+d.title+' '+d.URL))})(document);
+javascript:((d,x,u)=>{x=prompt('Post This Page');u=x?x+'\n':'';location.href='http://example.com/index.php?credential=MY_CREDENTIAL&mode=post&text='+encodeURIComponent(u+d.title+' '+d.URL) })(document);
 ```
 
 

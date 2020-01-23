@@ -1,14 +1,14 @@
-# Neo's PHP Twitter
+# Neo's PHP Micro Blog
 
-PHP 製のオレオレ Twitter。
+PHP 製のオレオレ・マイクロ・ブログ。
 
 - __[Example](http://35.197.103.64/)__
 
 
 ## 機能
 
-- パスワード認証により、自分だけがツイートできる、オリジナルの簡易 Twitter
-- ツイートは月ごとに生成するテキストファイルに保存する
+- パスワード認証により、自分だけが投稿できる、オリジナルの簡易マイクロ・ブログ
+- 投稿は月ごとに生成するテキストファイルに保存する
 
 
 ## 設定
@@ -16,14 +16,14 @@ PHP 製のオレオレ Twitter。
 `index.php` の `グローバル変数` 部分を自環境に合わせて変更する。
 
 - `$PRIVATE_DIRECTORY_PATH`
-    - クレデンシャルファイルやツイートファイルを格納する「プライベートディレクトリ」のパス。PHP の配置先から見た相対パスで記載できる
+    - クレデンシャルファイルや投稿ファイルを格納する「プライベートディレクトリ」のパス。PHP の配置先から見た相対パスで記載できる
     - ex. Apache サーバの `/var/www/html/` に `index.php` を配置した場合、`'../private'` と指定すれば、`/var/www/private/` ディレクトリ配下を参照するようになる
 - `$CREDENTIAL_FILE_NAME`
     - 投稿用パスワードを書いた「クレデンシャルファイル」の名前を記す
     - `$PRIVATE_DIRECTORY_PATH` と結合して参照するので、デフォルトの記述のままでいけば `/var/www/private/credential.txt` を参照することになる
 - `$TWEETS_FILE_NAME_PREFIX`
-    - 月ごとのツイートを記録した「ツイートファイル」の接頭辞を指定する
-    - `$PRIVATE_DIRECTORY_PATH` と結合するので、デフォルトの記述のままでいけば `/var/www/private/tweets-2019-01.txt` といったファイルが生成される
+    - 月ごとの投稿を記録した「投稿ファイル」の接頭辞を指定する
+    - `$PRIVATE_DIRECTORY_PATH` と結合するので、デフォルトの記述のままでいけば `/var/www/private/posts-2019-01.txt` といったファイルが生成される
 - `$PAGE_TITLE`
     - `title` 要素、および `h1` 要素で示されるページタイトル
 
@@ -47,18 +47,18 @@ URL に `credential` パラメータを指定してアクセスすると、投�
 
 ## 管理者投稿の方法 (`curl` 経由)
 
-`curl` でも投稿できる。ツイートはスペースなどを適宜 `%` エンコード (`%20`) すれば良い。
+`curl` でも投稿できる。投稿するテキストはスペースなどを適宜 `%` エンコード (`%20`) すれば良い。
 
 ```sh
 $ curl -X POST http://example.com/index.php -d 'credential=MY_CREDENTIAL&tweet=Test%20Test'
 
-# 「Test Test」とツイートできる
+# 「Test Test」と投稿できる
 ```
 
 
 ## Author
 
-[Neo](http://neo.s21.xrea.com/) ([@Neos21](https://twitter.com/Neos21))
+[Neo](http://neo.s21.xrea.com/)
 
 
 ## Links

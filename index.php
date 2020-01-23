@@ -44,14 +44,12 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' || ($_SERVER['REQUEST_METHOD'] === 'GET
     // ブラウザから POST メソッドを使った場合は POST 元に戻る
     $url = $_SERVER['HTTP_REFERER'];
     header('Location: ' . $url);
+    exit();
   }
   else if($_SERVER['REQUEST_METHOD'] === 'GET') {
     // GET メソッドの場合はページを表示する
-    outputHtmlHeader();
-    outputAdminForm();
-    outputPosts();
-    outputArchives();
-    outputHtmlFooter();
+    header('Location: ' . $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['SCRIPT_NAME'] . '?credential=' . $_GET['credential']);
+    exit();
   }
   else {
     // そうでなければ JSON でレスポンスする
@@ -244,18 +242,23 @@ EOL;
 
 /** 投稿を表示する */
 function outputPosts() {
-  // 表示対象年月の指定がなければ何も出力しない
-  if(!isset($_GET['view']) || empty($_GET['view'])) {
+  // パラメータ指定がなく、管理者モードなら何も出力しない
+  if((!isset($_GET['view']) || empty($_GET['view'])) && (isset($_GET['credential']) || !empty($_GET['credential']))) {
     return;
   }
   
   $yearMonth = '';
   $postsFilePath = '';
   
-  // 'YYYY-MM' のパラメータ指定があればその年月のファイルを取得する
   if(isset($_GET['view']) && preg_match('/^[0-9]{4}-[0-9]{2}$/', $_GET['view'])) {
+    // 'YYYY-MM' のパラメータ指定があればその年月のファイルを取得する
     $yearMonth = $_GET['view'];
     $postsFilePath = getPostsFilePath($_GET['view']);
+  }
+  else {
+    // パラメータ指定がなければ現在年月のファイルを取得する (存在しなければ作成する)
+    $yearMonth = getCurrentYearMonth();
+    $postsFilePath = getCurrentPostsFilePath();
   }
   
   if($postsFilePath === '') {

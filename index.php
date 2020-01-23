@@ -27,23 +27,10 @@ $HEADLINE_TITLE = 'Do Well';
 $HEADLINE_URL = 'http://neo.s21.xrea.com/';
 
 
-// GET の場合 : ページ表示
+// POST か、GET かつ投$稿パラメータが付いている場合
 // ======================================================================
 
-if($_SERVER['REQUEST_METHOD'] === 'GET') {
-  outputHtmlHeader();
-  outputAdminForm();
-  outputPosts();
-  outputArchives();
-  outputHtmlFooter();
-  return;
-}
-
-
-// POST の場合
-// ======================================================================
-
-if($_SERVER['REQUEST_METHOD'] === 'POST') {
+if($_SERVER['REQUEST_METHOD'] === 'POST' || ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['mode']) && $_GET['mode'] === 'post')) {
   if(!isValidPostParameters()) {
     return;
   }
@@ -54,15 +41,38 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
   }
   
   if(isGui()) {
-    // ブラウザからの場合は POST 元に戻る
+    // ブラウザから POST メソッドを使った場合は POST 元に戻る
     $url = $_SERVER['HTTP_REFERER'];
     header('Location: ' . $url);
+  }
+  else if($_SERVER['REQUEST_METHOD'] === 'GET') {
+    // GET メソッドの場合はページを表示する
+    outputHtmlHeader();
+    outputAdminForm();
+    outputPosts();
+    outputArchives();
+    outputHtmlFooter();
   }
   else {
     // そうでなければ JSON でレスポンスする
     header('Content-Type: application/json; charset=UTF-8');
     echo json_encode(array('result' => 'Success'));
   }
+  
+  return;
+}
+
+
+// その他の GET の場合 : ページ表示
+// ======================================================================
+
+if($_SERVER['REQUEST_METHOD'] === 'GET') {
+  outputHtmlHeader();
+  outputAdminForm();
+  outputPosts();
+  outputArchives();
+  outputHtmlFooter();
+  return;
 }
 
 
@@ -100,6 +110,7 @@ function outputHtmlHeader() {
 
 html {
   font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, YuGothic, "Yu Gothic", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-size: 16px;
   text-decoration-skip-ink: none;
   -webkit-text-size-adjust: 100%;
   -webkit-text-decoration-skip: objects;
@@ -136,7 +147,7 @@ input {
   border-radius: 0;
   padding: .25rem .5rem;
   color: inherit;
-  font-size: 1rem;
+  font-size: 16px;
   font-family: inherit;
   background: transparent;
   vertical-align: top;
@@ -298,12 +309,12 @@ function outputArchives() {
 
 /** GUI (ブラウザ) からのリクエストかどうかを判定する */
 function isGui() {
-  return isset($_POST['is_gui']) && !empty($_POST['is_gui']);
+  return getPostOrGetParameter('is_gui') !== '';  // パラメータが空文字でなければ (何かあれば) GUI からとする
 }
 
 /** エラーレスポンスを返す */
 function responseError(string $errorMessage) {
-  if(isGui()) {
+  if(isGui() || ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['mode']) && $_GET['mode'] === 'post')) {
     outputHtmlHeader();
     echo '<h1>Error : ' . $errorMessage . '</h1>';
     echo '<p><a href="javascript:history.back();">Back</a></p>';
@@ -320,13 +331,24 @@ function getCurrentYearMonth() {
   return date('Y-m');
 }
 
+/** POST か GET から指定のパラメータを取得する (POST 優先・trim 済の値を返す) */
+function getPostOrGetParameter(string $parameterName) {
+  if(isset($_POST[$parameterName]) && trim($_POST[$parameterName]) !== '') {
+    return trim($_POST[$parameterName]);
+  }
+  if(isset($_GET[$parameterName]) && trim($_GET[$parameterName]) !== '') {
+    return trim($_GET[$parameterName]);
+  }
+  return '';
+}
+
 /** POST パラメータをチェックする */
 function isValidPostParameters() {
-  if(!isset($_POST['credential']) || trim($_POST['credential']) === '') {
+  if(getPostOrGetParameter('credential') === '') {
     responseError('No Credential');
     return false;
   }
-  if(!isset($_POST['text']) || trim($_POST['text']) === '') {
+  if(getPostOrGetParameter('text') === '') {
     responseError('No Text');
     return false;
   }
@@ -337,7 +359,7 @@ function isValidPostParameters() {
   $credential = trim(fgets($credentialFile));
   fclose($credentialFile);
   // パスワードチェック
-  if(trim($_POST['credential']) !== $credential) {
+  if(getPostOrGetParameter('credential') !== $credential) {
     responseError('Invalid Credential');
     return false;
   }
@@ -348,7 +370,7 @@ function isValidPostParameters() {
 /** 投稿をファイルに書き込む */
 function writePost() {
   // 投稿をトリム・エスケープする
-  $text = htmlspecialchars(trim($_POST['text']), ENT_QUOTES, 'UTF-8');
+  $text = htmlspecialchars(getPostOrGetParameter('text'), ENT_QUOTES, 'UTF-8');
   // 改行コードを br 要素に変換する
   $text = preg_replace("/\r\n|\r|\n/", '<br>', $text);
   // URL をリンクに変換する
@@ -358,12 +380,24 @@ function writePost() {
   $currentDateTime = date('Y-m-d H:i:s');
   // 現在年月のファイルパスを取得する
   $postsFilePath = getCurrentPostsFilePath();
-  // ファイルの1行目に追記する
+  // ファイルの中身を取得する
   $originalPosts = file_get_contents($postsFilePath);
+  // ファイルの中身が空でなければ重複投稿チェックを行う
+  if(!empty(trim($originalPosts))) {
+    $firstLine = explode("\n", $originalPosts)[0];
+    $firstLinePost = explode("\t", $firstLine)[1];
+    if($text === $firstLinePost) {
+      responseError('This post is already posted');
+      return false;
+    }
+  }
+  
+  // ファイルの1行目に追記する
   $posts = $currentDateTime . "\t" . $text . "\n" . $originalPosts;
   $result = file_put_contents($postsFilePath, $posts);
   if(!$result) {
     responseError('Failed to write posts file');
+    return false;
   }
   return $result;
 }

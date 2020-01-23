@@ -21,7 +21,7 @@ PHP 製のオレオレ・マイクロ・ブログ。
 - `$CREDENTIAL_FILE_NAME`
     - 投稿用パスワードを書いた「クレデンシャルファイル」の名前を記す
     - `$PRIVATE_DIRECTORY_PATH` と結合して参照するので、デフォルトの記述のままでいけば `/var/www/private/credential.txt` を参照することになる
-- `$TWEETS_FILE_NAME_PREFIX`
+- `$POSTS_FILE_NAME_PREFIX`
     - 月ごとの投稿を記録した「投稿ファイル」の接頭辞を指定する
     - `$PRIVATE_DIRECTORY_PATH` と結合するので、デフォルトの記述のままでいけば `/var/www/private/posts-2019-01.txt` といったファイルが生成される
 - `$PAGE_TITLE`
@@ -50,7 +50,7 @@ URL に `credential` パラメータを指定してアクセスすると、投�
 `curl` でも投稿できる。投稿するテキストはスペースなどを適宜 `%` エンコード (`%20`) すれば良い。
 
 ```sh
-$ curl -X POST http://example.com/index.php -d 'credential=MY_CREDENTIAL&tweet=Test%20Test'
+$ curl -X POST http://example.com/index.php -d 'credential=MY_CREDENTIAL&text=Test%20Test'
 
 # 「Test Test」と投稿できる
 ```

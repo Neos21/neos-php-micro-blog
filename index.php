@@ -30,16 +30,32 @@ $HEADLINE_URL = 'http://neo.s21.xrea.com/';
 // リクエストに応じた処理定義
 // ======================================================================
 
-if($_SERVER['REQUEST_METHOD'] === 'POST' || isPostMode()) {
-  // POST メソッドか post モードの場合 : 投稿処理
+if($_SERVER['REQUEST_METHOD'] === 'POST' && getEitherParameter('mode') === 'delete') {
+  // POST メソッドかつ delete モードの場合 : 削除処理 (ブラウザからの POST フォーム送信のみ対応)
   
   // クレデンシャル・パラメータチェック
-  if(!authCredential() || !isValidPostParameters()) {
+  if(!authCredential() || !isValidDeleteParameters()) {
     exit();
   }
   
-  if(getEitherParameter('mode') === 'delete') {
-    echo 'DELETE MODE';
+  // 削除処理
+  if(!deletePost()) {
+    exit();
+  }
+  
+  // POST 元に戻る
+  $url = $_SERVER['HTTP_REFERER'];
+  if(empty($url)) {
+    $url = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['SCRIPT_NAME'] . '?credential=' . $_GET['credential'];
+  }
+  header('Location: ' . $url);
+  exit();
+}
+else if($_SERVER['REQUEST_METHOD'] === 'POST' || isPostMode()) {
+  // POST メソッドか post モードの場合 : 投稿処理 (ブラウザからの POST フォーム送信・curl 送信・ブックマークレットに対応)
+  
+  // クレデンシャル・パラメータチェック
+  if(!authCredential() || !isValidPostParameters()) {
     exit();
   }
   
@@ -136,6 +152,27 @@ function getCurrentPostsFilePath() {
   return $postsFilePath;
 }
 
+/** クレデンシャル情報をチェックする */
+function authCredential() {
+  if(isEmpty(getEitherParameter('credential'))) {
+    responseError('No Credential');
+    return false;
+  }
+  
+  // ファイルの1行目にパスワードが記されている
+  $credentialFile = fopen($GLOBALS['PRIVATE_DIRECTORY_PATH'] . '/' . $GLOBALS['CREDENTIAL_FILE_NAME'], 'r');
+  // 改行コードを除去する
+  $credential = trim(fgets($credentialFile));
+  fclose($credentialFile);
+  // パスワードチェック
+  if(getEitherParameter('credential') !== $credential) {
+    responseError('Invalid Credential');
+    return false;
+  }
+  
+  return true;
+}
+
 
 // ページ表示系関数
 // ======================================================================
@@ -201,6 +238,10 @@ h1 a:hover {
   text-decoration: underline;
 }
 
+form {
+  font-size: 0;
+}
+
 textarea,
 input {
   margin: 0;
@@ -215,8 +256,8 @@ input {
   outline: none;
 }
 
-form {
-  font-size: 0;
+[type="hidden"] {
+  display: none !important;
 }
 
 textarea {
@@ -272,12 +313,17 @@ dd {
 
 /** 行削除 */
 function deleteLine(lineNumber) {
-  if(lineNumber === '') return alert('Invalid Line Number.');
+  if(lineNumber === '') {
+    return alert('Invalid Line Number.');
+  }
   const deleteForm = document.getElementById('delete-form');
-  if(!deleteForm) return alert('Delete Form Does Not Exists.');
+  if(!deleteForm) {
+    return alert('Delete Form Does Not Exists.');
+  }
   const deleteLine = document.getElementById('delete-line');
-  if(!deleteLine) return alert('Delete Line Does Not Exists.');
-  
+  if(!deleteLine) {
+    return alert('Delete Line Does Not Exists.');
+  }
   deleteLine.value = lineNumber;
   deleteForm.submit();
 }
@@ -444,27 +490,6 @@ function responseError(string $errorMessage) {
 // 投稿処理
 // ======================================================================
 
-/** クレデンシャル情報をチェックする */
-function authCredential() {
-  if(isEmpty(getEitherParameter('credential'))) {
-    responseError('No Credential');
-    return false;
-  }
-  
-  // ファイルの1行目にパスワードが記されている
-  $credentialFile = fopen($GLOBALS['PRIVATE_DIRECTORY_PATH'] . '/' . $GLOBALS['CREDENTIAL_FILE_NAME'], 'r');
-  // 改行コードを除去する
-  $credential = trim(fgets($credentialFile));
-  fclose($credentialFile);
-  // パスワードチェック
-  if(getEitherParameter('credential') !== $credential) {
-    responseError('Invalid Credential');
-    return false;
-  }
-  
-  return true;
-}
-
 /** 投稿時のパラメータをチェックする */
 function isValidPostParameters() {
   if(isEmpty(getEitherParameter('text'))) {
@@ -495,7 +520,7 @@ function writePost() {
     $firstLine = explode("\n", $originalPosts)[0];
     $firstLinePost = explode("\t", $firstLine)[1];
     if($text === $firstLinePost) {
-      responseError('This post is already posted');
+      responseError('This Post Is Already Posted');
       return false;
     }
   }
@@ -504,9 +529,78 @@ function writePost() {
   $posts = $currentDateTime . "\t" . $text . "\n" . $originalPosts;
   $result = file_put_contents($postsFilePath, $posts);
   if(!$result) {
-    responseError('Failed to write posts file');
+    responseError('Failed To Write Posts File');
     return false;
   }
+  
+  return $result;
+}
+
+
+// 削除処理
+// ======================================================================
+
+/** 削除時のパラメータをチェックする */
+function isValidDeleteParameters() {
+  if(isEmpty($_GET['year_month'])) {
+    responseError('No Year Month');
+    return false;
+  }
+  
+  if(!preg_match('/^[0-9]{4}-[0-9]{2}$/', get($_GET['year_month'])) {
+    responseError('Invalid Year Month')
+    return false;
+  }
+  
+  if(isEmpty($_GET['line'])) {
+    responseError('No Line');
+    return false;
+  }
+  
+  return true;
+}
+
+/** 削除処理を行う */
+function deletePost() {
+  $yearMonth = get($_GET['year_month']);
+  $line = get($_GET['line']);
+  
+  $postsFilePath = $GLOBALS['PRIVATE_DIRECTORY_PATH'] . '/' . $GLOBALS['POSTS_FILE_NAME_PREFIX'] . $yearMonth . '.txt';
+  // ファイルが存在しなければ終了
+  if(!file_exists($postsFilePath)) {
+    responseError('Posts File Does Not Exists');
+    return false;
+  }
+  
+  // ファイルの中身を取得する
+  $originalPosts = file_get_contents($postsFilePath);
+  // ファイルの中身が空なら終了
+  if(empty(trim($originalPosts))) {
+    responseError('Posts File Is Empty')
+    return false;
+  }
+  
+  // 改行ごとに配列に分割する
+  $originalPostsArray = explode("\n", $originalPosts);
+  $originalPostsLength = count($originalPostsArray);
+  // 1行ずつ変数にコピーしていき、削除対象の行は処理しない
+  $deletedPosts = '';
+  for($i = 0; $i < $originalPostsLength; $i++) {
+    // 削除対象の行番号と、配列の添字 (+1) が一致したら、その行は処理しない
+    if(strcmp($line, $i + 1) === 0) {
+      continue;
+    }
+    $originalLine = $originalPostsArray[$i];
+    $deletedPosts = $deletedPosts + $originalLine + "\n";
+  }
+  
+  // 保存する
+  $result = file_put_contents($postsFilePath, $deletedPosts);
+  if(!$result) {
+    responseError('Failed To Delete Line');
+    return false;
+  }
+  
   return $result;
 }
 

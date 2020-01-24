@@ -542,17 +542,17 @@ function writePost() {
 
 /** 削除時のパラメータをチェックする */
 function isValidDeleteParameters() {
-  if(isEmpty($_GET['year_month'])) {
+  if(isEmpty($_POST['year_month'])) {
     responseError('No Year Month');
     return false;
   }
   
-  if(!preg_match('/^[0-9]{4}-[0-9]{2}$/', get($_GET['year_month'])) {
-    responseError('Invalid Year Month')
+  if(!preg_match('/^[0-9]{4}-[0-9]{2}$/', get($_POST['year_month']))) {
+    responseError('Invalid Year Month');
     return false;
   }
   
-  if(isEmpty($_GET['line'])) {
+  if(isEmpty($_POST['line'])) {
     responseError('No Line');
     return false;
   }
@@ -562,8 +562,8 @@ function isValidDeleteParameters() {
 
 /** 削除処理を行う */
 function deletePost() {
-  $yearMonth = get($_GET['year_month']);
-  $line = get($_GET['line']);
+  $yearMonth = get($_POST['year_month']);
+  $line = get($_POST['line']);
   
   $postsFilePath = $GLOBALS['PRIVATE_DIRECTORY_PATH'] . '/' . $GLOBALS['POSTS_FILE_NAME_PREFIX'] . $yearMonth . '.txt';
   // ファイルが存在しなければ終了
@@ -576,7 +576,7 @@ function deletePost() {
   $originalPosts = file_get_contents($postsFilePath);
   // ファイルの中身が空なら終了
   if(empty(trim($originalPosts))) {
-    responseError('Posts File Is Empty')
+    responseError('Posts File Is Empty');
     return false;
   }
   

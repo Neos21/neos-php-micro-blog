@@ -33,8 +33,13 @@ $HEADLINE_URL = 'http://neo.s21.xrea.com/';
 if($_SERVER['REQUEST_METHOD'] === 'POST' || isPostMode()) {
   // POST メソッドか post モードの場合 : 投稿処理
   
-  // パラメータチェック
-  if(!isValidPostParameters()) {
+  // クレデンシャル・パラメータチェック
+  if(!authCredential() || !isValidPostParameters()) {
+    exit();
+  }
+  
+  if(getEitherParameter('mode') === 'delete') {
+    echo 'DELETE MODE';
     exit();
   }
   
@@ -220,10 +225,14 @@ textarea {
   resize: none;
 }
 
-input {
+.post-button {
   margin-left: -1px;
   width: calc(2.5rem + 1px);
   height: 7rem;
+}
+
+.delete-button {
+  padding: 0 .4rem;
 }
 
 dl {
@@ -250,15 +259,30 @@ dd {
     margin: 0;
     border-bottom: 1px solid #0c0;
     padding: .5rem 0;
-    width: 12rem;
+    width: 14rem;
   }
   
   dd {
-    width: calc(100% - 12rem);
+    width: calc(100% - 14rem);
   }
 }
 
     </style>
+    <script>
+
+/** 行削除 */
+function deleteLine(lineNumber) {
+  if(lineNumber === '') return alert('Invalid Line Number.');
+  const deleteForm = document.getElementById('delete-form');
+  if(!deleteForm) return alert('Delete Form Does Not Exists.');
+  const deleteLine = document.getElementById('delete-line');
+  if(!deleteLine) return alert('Delete Line Does Not Exists.');
+  
+  deleteLine.value = lineNumber;
+  deleteForm.submit();
+}
+
+    </script>
   </head>
   <body>
 EOL;
@@ -292,7 +316,7 @@ function outputHeadlineOrAdminForm() {
   <input type="hidden" name="credential" value="$credential">
   <input type="hidden" name="is_gui" value="true">
   <textarea name="text" autocomplete="off"></textarea>
-  <input type="submit" value="!">
+  <input type="submit" class="post-button" value="!">
 </form>
 EOL;
   }
@@ -351,7 +375,7 @@ function outputPosts() {
     $post     = $lineArray[1];
     echo '<dt>';
     if($isAdmin) {
-      echo '  <input type="button" name="line" value="' . $lineNumber . '" onclick="alert(' . $lineNumber . ');">';
+      echo '  <input type="button" class="delete-button" value="D" onclick="deleteLine(\'' . $lineNumber . '\');">';
     }
     echo '  <time>' . $dateTime . '</time>';
     echo '</dt>';
@@ -372,6 +396,8 @@ function outputPosts() {
   <input type="hidden" name="credential" value="$credential">
   <input type="hidden" name="is_gui" value="true">
   <input type="hidden" name="mode" value="delete">
+  <input type="hidden" name="year_month" value="$yearMonth">
+  <input type="hidden "name="line" value="" id="delete-line">
 </form>
 EOL;
   }
@@ -418,15 +444,10 @@ function responseError(string $errorMessage) {
 // 投稿処理
 // ======================================================================
 
-/** 投稿時のパラメータをチェックする */
-function isValidPostParameters() {
+/** クレデンシャル情報をチェックする */
+function authCredential() {
   if(isEmpty(getEitherParameter('credential'))) {
     responseError('No Credential');
-    return false;
-  }
-  
-  if(isEmpty(getEitherParameter('text'))) {
-    responseError('No Text');
     return false;
   }
   
@@ -438,6 +459,16 @@ function isValidPostParameters() {
   // パスワードチェック
   if(getEitherParameter('credential') !== $credential) {
     responseError('Invalid Credential');
+    return false;
+  }
+  
+  return true;
+}
+
+/** 投稿時のパラメータをチェックする */
+function isValidPostParameters() {
+  if(isEmpty(getEitherParameter('text'))) {
+    responseError('No Text');
     return false;
   }
   

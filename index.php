@@ -334,16 +334,27 @@ function outputPosts() {
   $postsFile = fopen($postsFilePath, 'r');  // 読取専用
   $isEmpty = true;  // 空ファイルかどうかの判定
   
+  // 管理者用
+  $lineNumber = 0;  // 行数
+  $credential = get($_GET['credential']);
+  $isAdmin = !isEmpty($credential);
+  
   // 1行ずつ取り出す
   while(!feof($postsFile)) {
     $line = fgets($postsFile);
+    $lineNumber++;
     if(trim($line) === '') {
       continue;
     }
     $lineArray = explode("\t", $line);
     $dateTime = $lineArray[0];
     $post     = $lineArray[1];
-    echo '<dt><time>' . $dateTime . '</time></dt>';
+    echo '<dt>';
+    if($isAdmin) {
+      echo '  <input type="button" name="line" value="' . $lineNumber . '" onclick="alert(' . $lineNumber . ');">';
+    }
+    echo '  <time>' . $dateTime . '</time>';
+    echo '</dt>';
     echo '<dd><span>' . $post     . '</span></dd>';
     $isEmpty = false;
   }
@@ -353,6 +364,17 @@ function outputPosts() {
     echo '<dd><span>No Posts</span></dd>';
   }
   echo '</dl>';
+  
+  // 削除用の隠しフォームを配置する
+  if($isAdmin) {
+    echo <<<EOL
+<form id="delete-form" action="index.php" method="POST" autocomplete="off">
+  <input type="hidden" name="credential" value="$credential">
+  <input type="hidden" name="is_gui" value="true">
+  <input type="hidden" name="mode" value="delete">
+</form>
+EOL;
+  }
 }
 
 /** 過去ログのリンクを表示する */

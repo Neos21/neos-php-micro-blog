@@ -27,54 +27,112 @@ $HEADLINE_TITLE = 'Do Well';
 $HEADLINE_URL = 'http://neo.s21.xrea.com/';
 
 
-// POST か、GET かつ投$稿パラメータが付いている場合
+// リクエストに応じた処理定義
 // ======================================================================
 
-if($_SERVER['REQUEST_METHOD'] === 'POST' || ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['mode']) && $_GET['mode'] === 'post')) {
+if($_SERVER['REQUEST_METHOD'] === 'POST' || isPostMode()) {
+  // POST メソッドか post モードの場合 : 投稿処理
+  
+  // パラメータチェック
   if(!isValidPostParameters()) {
-    return;
+    exit();
   }
   
-  // 投稿をファイルに書き込む
+  // 投稿をファイルに書き込む・失敗した場合は関数内でエラーレスポンスを出力している
   if(!writePost()) {
-    return;
+    exit();
   }
   
+  // ブラウザから POST メソッドを使った場合は POST 元に戻る
   if(isGui()) {
-    // ブラウザから POST メソッドを使った場合は POST 元に戻る
     $url = $_SERVER['HTTP_REFERER'];
     header('Location: ' . $url);
     exit();
   }
-  else if($_SERVER['REQUEST_METHOD'] === 'GET') {
-    // GET メソッドの場合はページを表示する
+  
+  // GET メソッドの場合はページを表示する
+  if($_SERVER['REQUEST_METHOD'] === 'GET') {
     header('Location: ' . $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['SCRIPT_NAME'] . '?credential=' . $_GET['credential']);
     exit();
   }
-  else {
-    // そうでなければ JSON でレスポンスする
-    header('Content-Type: application/json; charset=UTF-8');
-    echo json_encode(array('result' => 'Success'));
-  }
   
-  return;
+  // そうでなければ JSON でレスポンスする
+  header('Content-Type: application/json; charset=UTF-8');
+  echo json_encode(array('result' => 'Success'));
+  exit();
 }
-
-
-// その他の GET の場合 : ページ表示
-// ======================================================================
-
-if($_SERVER['REQUEST_METHOD'] === 'GET') {
+else if($_SERVER['REQUEST_METHOD'] === 'GET') {
+  // その他の GET の場合 : ページ表示
+  
   outputHtmlHeader();
-  outputAdminForm();
+  outputHeadlineOrAdminForm();
   outputPosts();
   outputArchives();
   outputHtmlFooter();
-  return;
+  exit();
+}
+else {
+  responseError('Unexpected Error');
+  exit();
 }
 
 
-// 関数
+// ユーティリティ関数
+// ======================================================================
+
+/** 引数が空値かどうか判定する */
+function isEmpty($value) {
+  return !isset($value) || empty($value) || trim($value) === '';
+}
+
+/** 引数が null の場合も空文字で返す・値をトリムして返す */
+function get($value) {
+  return isEmpty($value) ? '' : trim($value);
+}
+
+/** POST か GET から指定のパラメータを取得する (POST 優先・trim 済の値を返す) */
+function getEitherParameter(string $parameterName) {
+  $postValue = get($_POST[$parameterName]);
+  if($postValue) {
+    return $postValue;
+  }
+  $getValue = get($_GET[$parameterName]);
+  if($getValue) {
+    return $getValue;
+  }
+  return '';
+}
+
+
+// 汎用関数
+// ======================================================================
+
+/** GET メソッドかつ post モードかどうか判定する */
+function isPostMode() {
+  return $_SERVER['REQUEST_METHOD'] === 'GET' && get($_GET['mode']) === 'post';
+}
+
+/** GUI (ブラウザ) からのリクエストかどうかを判定する : パラメータが空文字でなければ (何かあれば) GUI からとする */
+function isGui() {
+  return !isEmpty(getEitherParameter('is_gui'));
+}
+
+/** 現在の年月を 'YYYY-MM' 形式で返す */
+function getCurrentYearMonth() {
+  return date('Y-m');
+}
+
+/** 現在年月の投稿ファイルのパスを返す・存在しない場合は作成する */
+function getCurrentPostsFilePath() {
+  $postsFilePath = $GLOBALS['PRIVATE_DIRECTORY_PATH'] . '/' . $GLOBALS['POSTS_FILE_NAME_PREFIX'] . getCurrentYearMonth() . '.txt';
+  if(!file_exists($postsFilePath)) {
+    touch($postsFilePath);
+  }
+  return $postsFilePath;
+}
+
+
+// ページ表示系関数
 // ======================================================================
 
 /** HTML ヘッダを出力する */
@@ -214,20 +272,9 @@ function outputHtmlFooter() {
 EOL;
 }
 
-/** クレデンシャル値があればフォームを表示・そうでなければタイトルを表示する */
-function outputAdminForm() {
-  if(isset($_GET['credential']) && !empty($_GET['credential'])) {
-    $credential = $_GET['credential'];
-    echo <<<EOL
-<form action="index.php" method="POST" autocomplete="off">
-  <input type="hidden" name="credential" value="$credential">
-  <input type="hidden" name="is_gui" value="true">
-  <textarea name="text" autocomplete="off"></textarea>
-  <input type="submit" value="!">
-</form>
-EOL;
-  }
-  else {
+/** クレデンシャル値がなければタイトル・あれば投稿フォームを表示する */
+function outputHeadlineOrAdminForm() {
+  if(isEmpty($_GET['credential'])) {
     echo '<h1>';
     if(!empty($GLOBALS['HEADLINE_URL'])) {
       echo '<a href="' . $GLOBALS['HEADLINE_URL'] . '">';
@@ -238,25 +285,42 @@ EOL;
     }
     echo '</h1>';
   }
+  else {
+    $credential = $_GET['credential'];
+    echo <<<EOL
+<form action="index.php" method="POST" autocomplete="off">
+  <input type="hidden" name="credential" value="$credential">
+  <input type="hidden" name="is_gui" value="true">
+  <textarea name="text" autocomplete="off"></textarea>
+  <input type="submit" value="!">
+</form>
+EOL;
+  }
 }
 
 /** 投稿を表示する */
 function outputPosts() {
-  // パラメータ指定がなく、管理者モードなら何も出力しない
-  if((!isset($_GET['view']) || empty($_GET['view'])) && (isset($_GET['credential']) || !empty($_GET['credential']))) {
+  // 年月指定がなく、管理者モードなら何も出力しない
+  if(isEmpty($_GET['view']) && !isEmpty($_GET['credential'])) {
     return;
   }
+  
+  $view = get($_GET['view']);
   
   $yearMonth = '';
   $postsFilePath = '';
   
-  if(isset($_GET['view']) && preg_match('/^[0-9]{4}-[0-9]{2}$/', $_GET['view'])) {
-    // 'YYYY-MM' のパラメータ指定があればその年月のファイルを取得する
-    $yearMonth = $_GET['view'];
-    $postsFilePath = getPostsFilePath($_GET['view']);
+  if(preg_match('/^[0-9]{4}-[0-9]{2}$/', $view)) {
+    // 'YYYY-MM' のパラメータ指定があればその年月のファイルを取得する (ファイルがない年月の場合もある)
+    $yearMonth = $view;
+    $postsFilePath = $GLOBALS['PRIVATE_DIRECTORY_PATH'] . '/' . $GLOBALS['POSTS_FILE_NAME_PREFIX'] . $yearMonth . '.txt';
+    // ファイルが存在しなければ空文字とする
+    if(!file_exists($postsFilePath)) {
+      $postsFilePath = '';
+    }
   }
   else {
-    // パラメータ指定がなければ現在年月のファイルを取得する (存在しなければ作成する)
+    // 正常なパラメータ指定がなければ現在年月のファイルを取得する (存在しなければ作成する)
     $yearMonth = getCurrentYearMonth();
     $postsFilePath = getCurrentPostsFilePath();
   }
@@ -295,8 +359,8 @@ function outputPosts() {
 function outputArchives() {
   // 管理用パラメータがあればそれをリンクに引き継ぐ
   $credentialParam = '';
-  if(isset($_GET['credential']) && !empty(trim($_GET['credential']))) {
-    $credentialParam = '&credential=' . trim($_GET['credential']);
+  if(!isEmpty($_GET['credential'])) {
+    $credentialParam = '&credential=' . get($_GET['credential']);
   }
   
   $logFilePaths = glob($GLOBALS['PRIVATE_DIRECTORY_PATH'] . '/' . $GLOBALS['POSTS_FILE_NAME_PREFIX'] . '*.txt');
@@ -310,14 +374,13 @@ function outputArchives() {
   echo '</ul>';
 }
 
-/** GUI (ブラウザ) からのリクエストかどうかを判定する */
-function isGui() {
-  return getPostOrGetParameter('is_gui') !== '';  // パラメータが空文字でなければ (何かあれば) GUI からとする
-}
+
+// エラー時処理
+// ======================================================================
 
 /** エラーレスポンスを返す */
 function responseError(string $errorMessage) {
-  if(isGui() || ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['mode']) && $_GET['mode'] === 'post')) {
+  if(isGui() || isPostMode()) {
     outputHtmlHeader();
     echo '<h1>Error : ' . $errorMessage . '</h1>';
     echo '<p><a href="javascript:history.back();">Back</a></p>';
@@ -329,29 +392,18 @@ function responseError(string $errorMessage) {
   }
 }
 
-/** 現在の年月を 'YYYY-MM' 形式で返す */
-function getCurrentYearMonth() {
-  return date('Y-m');
-}
 
-/** POST か GET から指定のパラメータを取得する (POST 優先・trim 済の値を返す) */
-function getPostOrGetParameter(string $parameterName) {
-  if(isset($_POST[$parameterName]) && trim($_POST[$parameterName]) !== '') {
-    return trim($_POST[$parameterName]);
-  }
-  if(isset($_GET[$parameterName]) && trim($_GET[$parameterName]) !== '') {
-    return trim($_GET[$parameterName]);
-  }
-  return '';
-}
+// 投稿処理
+// ======================================================================
 
-/** POST パラメータをチェックする */
+/** 投稿時のパラメータをチェックする */
 function isValidPostParameters() {
-  if(getPostOrGetParameter('credential') === '') {
+  if(isEmpty(getEitherParameter('credential'))) {
     responseError('No Credential');
     return false;
   }
-  if(getPostOrGetParameter('text') === '') {
+  
+  if(isEmpty(getEitherParameter('text'))) {
     responseError('No Text');
     return false;
   }
@@ -362,7 +414,7 @@ function isValidPostParameters() {
   $credential = trim(fgets($credentialFile));
   fclose($credentialFile);
   // パスワードチェック
-  if(getPostOrGetParameter('credential') !== $credential) {
+  if(getEitherParameter('credential') !== $credential) {
     responseError('Invalid Credential');
     return false;
   }
@@ -373,7 +425,7 @@ function isValidPostParameters() {
 /** 投稿をファイルに書き込む */
 function writePost() {
   // 投稿をトリム・エスケープする
-  $text = htmlspecialchars(getPostOrGetParameter('text'), ENT_QUOTES, 'UTF-8');
+  $text = htmlspecialchars(getEitherParameter('text'), ENT_QUOTES, 'UTF-8');
   // 改行コードを br 要素に変換する
   $text = preg_replace("/\r\n|\r|\n/", '<br>', $text);
   // URL をリンクに変換する
@@ -403,21 +455,6 @@ function writePost() {
     return false;
   }
   return $result;
-}
-
-/** 第1引数で指定された年月の投稿ファイルが存在すればパスを返す */
-function getPostsFilePath(string $yearMonth) {
-  $postsFilePath = $GLOBALS['PRIVATE_DIRECTORY_PATH'] . '/' . $GLOBALS['POSTS_FILE_NAME_PREFIX'] . $yearMonth . '.txt';
-  return file_exists($postsFilePath) ? $postsFilePath : '';
-}
-
-/** 現在年月の投稿ファイルのパスを返す・存在しない場合は作成する */
-function getCurrentPostsFilePath() {
-  $postsFilePath = $GLOBALS['PRIVATE_DIRECTORY_PATH'] . '/' . $GLOBALS['POSTS_FILE_NAME_PREFIX'] . getCurrentYearMonth() . '.txt';
-  if(!file_exists($postsFilePath)) {
-    touch($postsFilePath);
-  }
-  return $postsFilePath;
 }
 
 ?>

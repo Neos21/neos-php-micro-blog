@@ -422,7 +422,7 @@ function outputPosts() {
     $post     = $lineArray[1];
     echo '<dt>';
     if($isAdmin) {
-      echo '  <input type="button" class="delete-button" value="D" onclick="deleteLine(\'' . $lineNumber - 1 . '\');">';
+      echo '  <input type="button" class="delete-button" value="D" onclick="deleteLine(\'' . ($lineNumber - 1) . '\');">';
     }
     echo '  <time>' . $dateTime . '</time>';
     echo '</dt>';

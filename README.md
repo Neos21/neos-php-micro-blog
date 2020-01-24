@@ -73,6 +73,10 @@ javascript:(x=>{x=prompt('Post','');location.href='http://example.com/index.php?
 javascript:((x,u)=>{x=prompt('Post or Open');u=x?'&mode=post&text='+encodeURIComponent(x):'';  window.open('http://example.com/index.php?credential=MY_CREDENTIAL'+u)})();
 javascript:((x,u)=>{x=prompt('Post or Open');u=x?'&mode=post&text='+encodeURIComponent(x):'';location.href='http://example.com/index.php?credential=MY_CREDENTIAL'+u} )();
 
+// 閲覧中の Web ページのタイトルと URL を投稿する
+javascript:(d=>{  window.open('http://example.com/index.php?credential=MY_CREDENTIAL&mode=post&text='+encodeURIComponent(d.title+' '+d.URL))})(document);
+javascript:(d=>{location.href='http://example.com/index.php?credential=MY_CREDENTIAL&mode=post&text='+encodeURIComponent(d.title+' '+d.URL) })(document);
+
 // 閲覧中の Web ページのタイトルと URL を投稿する・任意でコメントもかける
 javascript:((d,x,u)=>{x=prompt('Post This Page');u=x?x+'\n':'';  window.open('http://example.com/index.php?credential=MY_CREDENTIAL&mode=post&text='+encodeURIComponent(u+d.title+' '+d.URL))})(document);
 javascript:((d,x,u)=>{x=prompt('Post This Page');u=x?x+'\n':'';location.href='http://example.com/index.php?credential=MY_CREDENTIAL&mode=post&text='+encodeURIComponent(u+d.title+' '+d.URL) })(document);

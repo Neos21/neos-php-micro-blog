@@ -256,7 +256,8 @@ input {
   outline: none;
 }
 
-[type="hidden"] {
+#delete-form,
+#delete-line {
   display: none !important;
 }
 
@@ -421,7 +422,7 @@ function outputPosts() {
     $post     = $lineArray[1];
     echo '<dt>';
     if($isAdmin) {
-      echo '  <input type="button" class="delete-button" value="D" onclick="deleteLine(\'' . $lineNumber . '\');">';
+      echo '  <input type="button" class="delete-button" value="D" onclick="deleteLine(\'' . $lineNumber - 1 . '\');">';
     }
     echo '  <time>' . $dateTime . '</time>';
     echo '</dt>';
@@ -586,8 +587,8 @@ function deletePost() {
   // 1行ずつ変数にコピーしていき、削除対象の行は処理しない
   $deletedPosts = '';
   for($i = 0; $i < $originalPostsLength; $i++) {
-    // 削除対象の行番号と、配列の添字 (+1) が一致したら、その行は処理しない
-    if(strcmp($line, $i + 1) === 0) {
+    // 削除対象の行番号と、配列の添字が一致したら、その行は処理しない
+    if(strcmp($line, $i) === 0) {
       continue;
     }
     $originalLine = $originalPostsArray[$i];

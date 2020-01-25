@@ -327,8 +327,10 @@ function deleteLine(lineNumber) {
   if(!deleteLine) {
     return alert('Delete Line Does Not Exists.');
   }
-  deleteLine.value = lineNumber;
-  deleteForm.submit();
+  if(confirm('Are You Sure? [' + lineNumber + ']')) {
+    deleteLine.value = lineNumber;
+    deleteForm.submit();
+  }
 }
 
     </script>

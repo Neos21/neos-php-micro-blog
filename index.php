@@ -186,9 +186,9 @@ function outputHtmlHeader() {
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=Edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{$GLOBALS['PAGE_TITLE']}</title>
     <link rel="icon" href="index.ico">
     <link rel="apple-touch-icon" href="index.png" sizes="114x114">
-    <title>{$GLOBALS['PAGE_TITLE']}</title>
     <style>
 
 @font-face {

@@ -103,7 +103,7 @@ else {
 
 /** 引数が空値かどうか判定する */
 function isEmpty($value) {
-  return !isset($value) || empty($value) || trim($value) === '';
+  return !isset($value) || trim($value) === '';
 }
 
 /** 引数が null の場合も空文字で返す・値をトリムして返す */

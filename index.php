@@ -564,7 +564,7 @@ function isValidDeleteParameters() {
 /** 削除処理を行う */
 function deletePost() {
   $yearMonth = get($_POST['year_month']);
-  $line = get($_POST['line']);
+  $line = (int) get($_POST['line']);
   
   $postsFilePath = $GLOBALS['PRIVATE_DIRECTORY_PATH'] . '/' . $GLOBALS['POSTS_FILE_NAME_PREFIX'] . $yearMonth . '.txt';
   // ファイルが存在しなければ終了
@@ -574,29 +574,20 @@ function deletePost() {
   }
   
   // ファイルの中身を取得する
-  $originalPosts = file_get_contents($postsFilePath);
-  // ファイルの中身が空なら終了
-  if(empty(trim($originalPosts))) {
-    responseError('Posts File Is Empty');
+  $posts = file($postsFilePath);
+  
+  // ファイルの中身が空か、総行数より大きい値だったら終了
+  $postsLength = count($posts);
+  if($postsLength === 0 || $postsLength < $line) {
+    responseError('Invalid Line Number');
     return false;
   }
   
-  // 改行ごとに配列に分割する
-  $originalPostsArray = explode("\n", $originalPosts);
-  $originalPostsLength = count($originalPostsArray);
-  // 1行ずつ変数にコピーしていき、削除対象の行は処理しない
-  $deletedPosts = '';
-  for($i = 0; $i < $originalPostsLength; $i++) {
-    // 削除対象の行番号と、配列の添字が一致したら、その行は処理しない
-    if(strcmp($line, $i) === 0) {
-      continue;
-    }
-    $originalLine = $originalPostsArray[$i];
-    $deletedPosts = $deletedPosts + $originalLine + "\n";
-  }
+  // 指定行を削除する
+  unset($posts[$line]);
   
   // 保存する
-  $result = file_put_contents($postsFilePath, $deletedPosts);
+  $result = file_put_contents($postsFilePath, $posts);
   if(!$result) {
     responseError('Failed To Delete Line');
     return false;

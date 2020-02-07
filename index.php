@@ -464,6 +464,7 @@ function outputArchives() {
   }
   
   $logFilePaths = glob($GLOBALS['PRIVATE_DIRECTORY_PATH'] . '/' . $GLOBALS['POSTS_FILE_NAME_PREFIX'] . '*.txt');
+  rsort($logFilePaths);
   echo '<ul>';
   foreach($logFilePaths as $logFilePath) {
     // ファイル名から年月部分を切り出す

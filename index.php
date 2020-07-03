@@ -294,6 +294,14 @@ dd {
   padding: .5rem 0;
 }
 
+.hash-link {
+  text-decoration: none;
+}
+
+.hash-link:hover {
+  text-decoration: underline;
+}
+
 @media (min-width: 576px) {
   dl {
     display: flex;
@@ -386,6 +394,9 @@ function outputPosts() {
   $yearMonth = '';
   $postsFilePath = '';
   
+  // 過去ログを表示しているかどうか : 過去ログを表示している場合はハッシュリンクを作る
+  $isArchiveView = false;
+  
   if(preg_match('/^[0-9]{4}-[0-9]{2}$/', $view)) {
     // 'YYYY-MM' のパラメータ指定があればその年月のファイルを取得する (ファイルがない年月の場合もある)
     $yearMonth = $view;
@@ -394,6 +405,7 @@ function outputPosts() {
     if(!file_exists($postsFilePath)) {
       $postsFilePath = '';
     }
+    $isArchiveView = true;
   }
   else {
     // 正常なパラメータ指定がなければ現在年月のファイルを取得する (存在しなければ作成する)
@@ -429,7 +441,14 @@ function outputPosts() {
     if($isAdmin) {
       echo '  <input type="button" class="delete-button" value="D" onclick="deleteLine(\'' . ($lineNumber - 1) . '\');">';
     }
-    echo '  <time>' . $dateTime . '</time>';
+    if($isArchiveView) {
+      $hashDateTime = str_replace(' ', '-', $dateTime);
+      $hashDateTime = str_replace(':', '-', $hashDateTime);
+      echo '  <a href="#post-' . $hashDateTime . '" class="hash-link"><time id="post-' . $hashDateTime . '">' . $dateTime . '</time></a>';
+    }
+    else {
+      echo '  <time>' . $dateTime . '</time>';
+    }
     echo '</dt>';
     echo '<dd><span>' . $post     . '</span></dd>';
     $isEmpty = false;

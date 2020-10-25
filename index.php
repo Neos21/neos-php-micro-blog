@@ -184,7 +184,6 @@ function outputHtmlHeader() {
 <html lang="ja">
   <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow, noarchive">
     <title>{$GLOBALS['PAGE_TITLE']}</title>
@@ -218,9 +217,7 @@ html {
   word-break: break-all;
   line-height: 1.3;
   background: #000;
-  overflow-x: hidden;
-  overflow-y: scroll;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden scroll;
   cursor: default;
 }
 

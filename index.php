@@ -3,7 +3,7 @@
 /*!
  * Neo's PHP Micro Blog
  * 
- * Neo (@Neos21) http://neo.s21.xrea.com/
+ * Neo (@Neos21) https://neos21.net/
  */
 
 // この場でタイムゾーンを変更する

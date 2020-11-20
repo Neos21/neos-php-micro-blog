@@ -24,7 +24,7 @@ $PAGE_TITLE = '&#65279;';
 // 見出しに指定するタイトル
 $HEADLINE_TITLE = 'Do Well';
 // 見出しに指定するリンク URL
-$HEADLINE_URL = 'http://neo.s21.xrea.com/';
+$HEADLINE_URL = 'https://neos21.net/';
 
 
 // リクエストに応じた処理定義
